@@ -1,0 +1,296 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users for authentication
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  type      String   @default("user") // "admin" or "user"
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+// Projects
+model Project {
+  id                          String   @id @default(cuid())
+  name                        String
+  clientName                  String
+  startDate                   DateTime
+  endDate                     DateTime?
+  timeline                    String?
+  reminderDate                String?
+  description                 String?
+  status                      String   @default("active") // "active", "completed", "on-hold"
+  budget                      Int?
+  contentLocked               Boolean  @default(false)
+  financialLocked             Boolean  @default(false)
+  paymentReminderSentAt5Days  Boolean  @default(false)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  // Relations
+  projectLinks  ProjectLink[]
+  milestones    Milestone[]
+  invoices      Invoice[]
+  tasks         Task[]
+  reminders     Reminder[]
+
+  @@map("projects")
+}
+
+// Project Links (including ChatGPT links)
+model ProjectLink {
+  id          String   @id @default(cuid())
+  projectId   String
+  title       String
+  url         String
+  description String?
+  category    String   @default("documentation") // "chatgpt", "documentation", "design", "content", "financial", "other"
+  addedBy     String
+  addedDate   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_links")
+  @@index([projectId])
+  @@index([category])
+}
+
+// Tasks
+model Task {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  status        String   @default("todo") // "todo", "in-progress", "review", "done", "blocked", "waiting"
+  priority      String   @default("medium") // "urgent", "high", "medium", "low"
+  assigneeId    String?
+  department    String   // "Content", "Design", "Finance", "IB"
+  startDate     DateTime?
+  dueDate       DateTime?
+  timeline      String?
+  reminderDate  String?
+  blockedReason String?
+  projectId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee  TeamMember? @relation(fields: [assigneeId], references: [id])
+  comments  TaskComment[]
+  dependencies TaskDependency[]
+
+  @@map("tasks")
+  @@index([projectId])
+  @@index([status])
+  @@index([assigneeId])
+  @@index([department])
+}
+
+// Task Comments
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  author    String
+  text      String
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("task_comments")
+  @@index([taskId])
+}
+
+// Task Dependencies
+model TaskDependency {
+  id         String @id @default(cuid())
+  taskId     String
+  dependsOn  String
+  createdAt  DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("task_dependencies")
+  @@index([taskId])
+}
+
+// Team Members
+model TeamMember {
+  id         String   @id @default(cuid())
+  name       String
+  role       String
+  department String   // "Content", "Design", "Finance", "IB"
+  avatar     String?
+  taskCount  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  tasks Task[]
+
+  @@map("team_members")
+  @@index([department])
+}
+
+// Invoices/Payments
+model Invoice {
+  id              String   @id @default(cuid())
+  invoiceNumber   String   @unique
+  projectId       String
+  milestoneId     String?
+  amount          Int
+  currency        String   @default("INR")
+  description     String?
+  issueDate       DateTime
+  dueDate         DateTime
+  status          String   @default("draft") // "draft", "sent", "paid", "overdue", "cancelled"
+  clientName      String
+  notes           String?
+  paymentMethod   String?
+  paidDate        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone   Milestone?  @relation(fields: [milestoneId], references: [id])
+  reminders   PaymentReminder[]
+
+  @@map("invoices")
+  @@index([projectId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// Payment Reminders
+model PaymentReminder {
+  id              String   @id @default(cuid())
+  invoiceId       String
+  projectId       String
+  invoiceNumber   String
+  amount          Int
+  currency        String   @default("INR")
+  daysUntilDue    Int
+  dueDate         DateTime
+  clientName      String
+  status          String   @default("sent") // "sent", "paid", "overdue"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("payment_reminders")
+  @@index([projectId])
+  @@index([invoiceId])
+}
+
+// Milestones
+model Milestone {
+  id              String   @id @default(cuid())
+  projectId       String
+  name            String
+  description     String?
+  dayNumber       Int
+  dueDate         DateTime
+  status          String   @default("pending") // "pending", "in-progress", "completed", "flagged"
+  deliverables    String?  // JSON array as string
+  flagged         Boolean  @default(false)
+  flagReason      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invoices Invoice[]
+  reminders Reminder[]
+
+  @@map("milestones")
+  @@index([projectId])
+  @@index([status])
+}
+
+// Reminders
+model Reminder {
+  id          String   @id @default(cuid())
+  type        String   @default("info") // "urgent", "warning", "info", "success"
+  subject     String
+  message     String
+  dueDate     DateTime
+  priority    String   @default("normal") // "high", "normal", "low"
+  completed   Boolean  @default(false)
+  assignedTo  String?
+  projectId   String
+  milestoneId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone Milestone? @relation(fields: [milestoneId], references: [id])
+
+  @@map("reminders")
+  @@index([projectId])
+  @@index([milestoneId])
+  @@index([dueDate])
+}
+
+// Client Sheets
+model ClientSheet {
+  id              String   @id @default(cuid())
+  clientName      String
+  email           String?
+  phone           String?
+  address         String?
+  city            String?
+  state           String?
+  zipCode         String?
+  country         String?
+  companyName     String?
+  industry        String?
+  websiteUrl      String?
+  notes           String?
+  status          String   @default("active") // "active", "inactive", "prospect"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("client_sheets")
+  @@index([clientName])
+  @@index([status])
+}
+
+// Activity Log
+model ActivityLog {
+  id          String   @id @default(cuid())
+  action      String
+  description String?
+  userId      String?
+  userName    String?
+  category    String?
+  metadata    String?  // JSON as string
+  createdAt   DateTime @default(now())
+
+  @@map("activity_logs")
+  @@index([createdAt])
+  @@index([category])
+  @@index([userId])
+}
