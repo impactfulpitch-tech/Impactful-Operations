@@ -188,22 +188,22 @@ export default function Milestones() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 overflow-x-hidden">
       {/* Header */}
-      <div className="px-6 lg:px-8 py-6 border-b border-slate-200 dark:border-slate-700">
+      <div className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
                 Project Milestones
               </h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-1">Track project phases and deliverables</p>
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">Track project phases and deliverables</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="px-6 lg:px-8 py-8">
+      <div className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Project Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

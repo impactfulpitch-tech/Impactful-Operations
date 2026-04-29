@@ -25,7 +25,7 @@ export default function AppLayout() {
       <RemindersAlertBanner />
       <main
         className={`min-h-screen transition-all duration-300 ${
-          isMobile ? "ml-0 mt-14" : "ml-56 mt-16"
+          isMobile ? "ml-0 mt-28 sm:mt-32" : "ml-56 mt-28 sm:mt-32"
         }`}
       >
         <Outlet />

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAutoRefreshAnalytics } from "@/hooks/useAutoRefreshAnalytics";
 import { ClientRecord, clientSheets as defaultClientSheets } from "@/data/clientData";
-import { Search, FileSpreadsheet, AlertCircle, Clock, Phone, Edit2, Trash2, Download, Upload } from "lucide-react";
+import { Search, FileSpreadsheet, AlertCircle, Clock, Phone, Edit2, Trash2, Download, Upload, Eye } from "lucide-react";
 import { AddAdminButton } from "@/components/AddAdminButton";
 import { Modal } from "@/components/Modal";
 import { Form } from "@/components/Form";
@@ -55,6 +55,9 @@ export default function Sheets() {
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddSheetModal, setShowAddSheetModal] = useState(false);
+  const [showAllSheetsModal, setShowAllSheetsModal] = useState(false);
+  const [newSheetName, setNewSheetName] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<ClientRecord | null>(null);
@@ -78,7 +81,7 @@ export default function Sheets() {
   }, [uploadedSheets]);
 
   const handleExportToExcel = () => {
-    exportClientSheetsToExcel(sheets);
+    exportClientSheetsToExcel(sheets, activeSheet);
   };
 
   const handleImportFromExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,8 +93,23 @@ export default function Sheets() {
 
     try {
       const importedSheets = await importClientSheetsFromExcel(file);
-      setSheets(importedSheets);
-      setImportMessage(`Successfully imported ${importedSheets.length} sheet(s)!`);
+      // Append imported sheets to existing sheets, don't replace them
+      const updatedSheets = [...sheets, ...importedSheets];
+      setSheets(updatedSheets);
+      
+      // Switch to the first imported sheet so user can see the data
+      if (importedSheets.length > 0) {
+        setActiveSheet(importedSheets[0].id);
+      }
+      
+      setImportMessage(`Successfully imported ${importedSheets.length} sheet(s) with data!`);
+      logActivity({
+        type: "add",
+        entity: "sheet",
+        title: file.name,
+        description: `Excel file imported - ${importedSheets.length} sheet(s) with ${importedSheets.reduce((sum, s) => sum + s.records.length, 0)} total records`,
+        user: isAdmin ? "HR Admin" : "User",
+      });
       setTimeout(() => setImportMessage(""), 3000);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Failed to import Excel file";
@@ -161,6 +179,27 @@ export default function Sheets() {
 
   const handleAddClient = () => {
     setShowAddModal(true);
+  };
+
+  const handleAddSheet = () => {
+    if (newSheetName.trim()) {
+      const newSheet = {
+        id: `SHEET${Date.now()}`,
+        name: newSheetName.trim(),
+        records: [],
+      };
+      setSheets([...sheets, newSheet]);
+      setActiveSheet(newSheet.id);
+      setNewSheetName("");
+      setShowAddSheetModal(false);
+      logActivity({
+        type: "add",
+        entity: "sheet",
+        title: newSheetName.trim(),
+        description: `New client sheet created`,
+        user: isAdmin ? "HR Admin" : "User",
+      });
+    }
   };
 
   const handleAddClientSubmit = (data: Record<string, any>) => {
@@ -349,6 +388,23 @@ export default function Sheets() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <button
+            onClick={() => setShowAllSheetsModal(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-sm font-medium transition-colors border border-indigo-200"
+            title="View all sheets"
+          >
+            <Eye className="w-4 h-4" />
+            <span className="hidden sm:inline">All Sheets ({sheets.length})</span>
+            <span className="inline sm:hidden">{sheets.length}</span>
+          </button>
+          <button
+            onClick={() => setShowAddSheetModal(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 text-sm font-medium transition-colors border border-purple-200"
+            title="Create new sheet"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span className="hidden sm:inline">New Sheet</span>
+          </button>
+          <button
             onClick={handleExportToExcel}
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 text-sm font-medium transition-colors border border-green-200"
             title="Export to Excel"
@@ -383,29 +439,70 @@ export default function Sheets() {
         </div>
       )}
 
-      {/* Sheet Tabs */}
-      <div className="flex gap-0.5 border-b border-border">
-        {sheets.map((sheet) => (
-          <button
-            key={sheet.id}
-            onClick={() => {
-              setActiveSheet(sheet.id);
-              setSearch("");
-              setFilterCat("all");
-            }}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              activeSheet === sheet.id
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {sheet.name}
-          </button>
-        ))}
+      {/* Sheet Selector Dropdown & Tabs */}
+      <div className="space-y-3">
+        {/* Admin Sheet Selector Dropdown */}
+        {isAdmin && sheets.length > 0 && (
+          <div className="bg-card border border-border rounded-lg p-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium mb-1">Select Sheet</p>
+                <select
+                  value={activeSheet}
+                  onChange={(e) => {
+                    setActiveSheet(e.target.value);
+                    setSearch("");
+                    setFilterCat("all");
+                  }}
+                  className="text-sm bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-medium"
+                >
+                  {sheets.map((sheet) => (
+                    <option key={sheet.id} value={sheet.id}>
+                      {sheet.name} ({sheet.records.length} records)
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <FileSpreadsheet className="w-4 h-4" />
+                <span className="font-medium">{sheets.length} sheet{sheets.length !== 1 ? "s" : ""}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sheet Tabs - Alternative view */}
+        <div className="flex gap-0.5 border-b border-border overflow-x-auto">
+          {sheets.map((sheet) => (
+            <button
+              key={sheet.id}
+              onClick={() => {
+                setActiveSheet(sheet.id);
+                setSearch("");
+                setFilterCat("all");
+              }}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
+                activeSheet === sheet.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+              title={`${sheet.name} - ${sheet.records.length} records`}
+            >
+              {sheet.name}
+              <span className="ml-1.5 text-xs bg-muted px-1.5 py-0.5 rounded">
+                {sheet.records.length}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        <div className="bg-card border border-border rounded-lg p-2.5 sm:p-3.5">
+          <p className="text-xs text-muted-foreground mb-1">Sheet Records</p>
+          <p className="text-base sm:text-lg font-bold text-card-foreground">{records.length}</p>
+        </div>
         <div className="bg-card border border-border rounded-lg p-2.5 sm:p-3.5">
           <p className="text-xs text-muted-foreground mb-1">Pipeline</p>
           <p className="text-base sm:text-lg font-bold text-card-foreground">₹{stats.totalAmount.toLocaleString("en-IN")}</p>
@@ -503,8 +600,20 @@ export default function Sheets() {
                   )}
                 </div>
               ))
+            ) : records.length === 0 ? (
+              <div className="px-3 py-12 text-center">
+                <FileSpreadsheet className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm font-medium text-muted-foreground">
+                  <strong>{currentSheet?.name}</strong> sheet is empty
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Click "+ Client" button to add the first record
+                </p>
+              </div>
             ) : (
-              <div className="px-3 py-8 text-center text-sm text-muted-foreground">No records found</div>
+              <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+                No results matching your filters
+              </div>
             )}
           </div>
         </div>
@@ -605,6 +714,93 @@ export default function Sheets() {
           </div>
         </div>
       </Modal>
+
+      {/* Add New Sheet Modal */}
+      <Modal title="Create New Sheet" isOpen={showAddSheetModal} onClose={() => setShowAddSheetModal(false)}>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-foreground">Sheet Name</label>
+            <input
+              type="text"
+              value={newSheetName}
+              onChange={(e) => setNewSheetName(e.target.value)}
+              placeholder="e.g., Q1 Prospects, Hot Leads, etc."
+              className="w-full mt-1.5 px-3 py-2 text-sm bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddSheet();
+              }}
+            />
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setNewSheetName("");
+                setShowAddSheetModal(false);
+              }}
+              className="flex-1 px-4 py-2 bg-secondary text-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddSheet}
+              disabled={!newSheetName.trim()}
+              className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Create Sheet
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* All Sheets Modal */}
+      <Modal 
+        title={`All Sheets (${sheets.length})`} 
+        isOpen={showAllSheetsModal} 
+        onClose={() => setShowAllSheetsModal(false)}
+      >
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {sheets.length > 0 ? (
+            sheets.map((sheet) => (
+              <div
+                key={sheet.id}
+                onClick={() => {
+                  setActiveSheet(sheet.id);
+                  setShowAllSheetsModal(false);
+                  setSearch("");
+                  setFilterCat("all");
+                }}
+                className={`p-3 sm:p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  activeSheet === sheet.id
+                    ? "border-primary bg-primary/5 dark:bg-primary/10"
+                    : "border-border bg-card hover:border-primary/50 hover:bg-accent/50"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-foreground text-sm">{sheet.name}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {sheet.records.length} record{sheet.records.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {activeSheet === sheet.id && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-8">
+              <FileSpreadsheet className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No sheets available</p>
+            </div>
+          )}
+        </div>
+      </Modal>
+
     </div>
   );
 }

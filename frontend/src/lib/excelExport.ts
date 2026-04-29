@@ -249,7 +249,7 @@ export function exportFullReport(
 /**
  * Export client sheets data to Excel
  */
-export function exportClientSheetsToExcel(sheets: any[], activeSheetId: string, filename = "Client_Sheets") {
+export function exportClientSheetsToExcel(sheets: any[], activeSheetId?: string, filename = "Client_Sheets") {
   const workbook = XLSX.utils.book_new();
 
   sheets.forEach((sheet) => {

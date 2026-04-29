@@ -68,13 +68,14 @@ export default function Tasks() {
     const dueDateObj = new Date(dueDate);
     const reminderDate = new Date(dueDateObj.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     
+    const assigneeName = data.assignee || "Unassigned";
     const newTask = {
       id: `T${Date.now()}`,
       title: data.title,
       description: data.description || "",
       project: data.project,
       status: data.status,
-      assignee: { id: "default", name: "Unassigned", avatar: "?" },
+      assignee: { id: "default", name: assigneeName, avatar: assigneeName.split(" ").map((n: string) => n[0]).join("").toUpperCase() || "?" },
       priority: data.priority || "medium",
       dueDate: dueDate,
       startDate: startDate,
@@ -108,6 +109,7 @@ export default function Tasks() {
       const dueDateObj = new Date(dueDate);
       const reminderDate = new Date(dueDateObj.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
       
+      const assigneeName = data.assignee || selectedTask.assignee.name;
       setTasks(
         tasks.map((t) =>
           t.id === selectedTask.id
@@ -117,6 +119,7 @@ export default function Tasks() {
                 description: data.description || t.description,
                 project: data.project,
                 status: data.status,
+                assignee: { id: "default", name: assigneeName, avatar: assigneeName.split(" ").map((n: string) => n[0]).join("").toUpperCase() || "?" },
                 priority: data.priority || t.priority,
                 dueDate: dueDate,
                 startDate: data.startDate || t.startDate,
@@ -316,6 +319,7 @@ export default function Tasks() {
             { name: "title", label: "Task Title", type: "text", placeholder: "Enter task title", required: true },
             { name: "description", label: "Description", type: "textarea", placeholder: "Task description (optional)" },
             { name: "project", label: "Project Name", type: "text", placeholder: "Project name", required: true },
+            { name: "assignee", label: "Assign To (Team Member Name)", type: "text", placeholder: "Enter team member name", required: false },
             {
               name: "status",
               label: "Status",
@@ -367,6 +371,7 @@ export default function Tasks() {
               { name: "title", label: "Task Title", type: "text", placeholder: "Enter task title", required: true },
               { name: "description", label: "Description", type: "textarea", placeholder: "Task description (optional)" },
               { name: "project", label: "Project Name", type: "text", placeholder: "Project name", required: true },
+              { name: "assignee", label: "Assign To (Team Member Name)", type: "text", placeholder: "Enter team member name", required: false },
               {
                 name: "status",
                 label: "Status",

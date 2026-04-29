@@ -144,23 +144,26 @@ export default function Payments() {
   const projects = projectList.map((p) => ({ id: p.id, name: p.name }));
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="w-full min-h-screen bg-white dark:bg-slate-900 overflow-x-hidden">
+      <div className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8 max-w-7xl mx-auto">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <DollarSign className="w-8 h-8 text-amber-500" />
-            Payment Management
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 sm:gap-3">
+            <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-amber-500 flex-shrink-0" />
+            <span>Payment Management</span>
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
             Manage invoices and payment reminders (Admin Only)
           </p>
         </div>
-        <Button onClick={handleAddInvoice} className="gap-2">
+        <Button onClick={handleAddInvoice} className="gap-2 w-full sm:w-auto">
           <Plus className="w-4 h-4" />
           New Invoice
         </Button>
       </div>
+
+      <div className="max-w-7xl mx-auto space-y-6">
 
       {/* Payment Reminders Alert */}
       {reminders.length > 0 && (
@@ -410,6 +413,8 @@ export default function Payments() {
           />
         )}
       </Modal>
+      </div>
+      </div>
     </div>
   );
 }

@@ -37,41 +37,45 @@ export function RemindersAlertBanner() {
   const overduePaymentCount = allPaymentReminders.filter(r => r.status === "overdue").length;
 
   return (
-    <div className="bg-red-50 dark:bg-red-950/30 border-b-2 border-red-500 px-4 py-3">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
-          <div>
-            <p className="font-semibold text-red-700 dark:text-red-300">
-              ⚠️ {overdueCount + overduePaymentCount} Overdue Reminder{overdueCount + overduePaymentCount !== 1 ? "s" : ""}
-            </p>
-            <div className="text-sm text-red-600 dark:text-red-400 flex flex-col gap-1">
-              {overdueCount > 0 && (
-                <span>
-                  <Calendar className="w-3 h-3 inline mr-1" />
-                  {overdueCount} overdue project{overdueCount !== 1 ? "s" : ""}
+    <div className="fixed top-0 left-0 right-0 bg-red-50 dark:bg-red-950/30 border-b-2 border-red-500 z-40">
+      <div className="max-w-full px-3 sm:px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="font-semibold text-red-700 dark:text-red-300 text-sm sm:text-base">
+                ⚠️ {overdueCount + overduePaymentCount} Overdue Reminder{overdueCount + overduePaymentCount !== 1 ? "s" : ""}
+              </p>
+              <div className="text-xs sm:text-sm text-red-600 dark:text-red-400 flex flex-col gap-1 mt-1">
+                {overdueCount > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3 flex-shrink-0" />
+                    <span>{overdueCount} overdue project{overdueCount !== 1 ? "s" : ""}</span>
+                  </span>
+                )}
+                {isAdmin && overduePaymentCount > 0 && (
+                  <span className="flex items-center gap-1">
+                    <DollarSign className="w-3 h-3 flex-shrink-0" />
+                    <span>{overduePaymentCount} overdue payment{overduePaymentCount !== 1 ? "s" : ""}</span>
+                  </span>
+                )}
+                <span className="flex items-center gap-1">
+                  📌 Click the bell icon to view and manage reminders
                 </span>
-              )}
-              {isAdmin && overduePaymentCount > 0 && (
-                <span>
-                  <DollarSign className="w-3 h-3 inline mr-1" />
-                  {overduePaymentCount} overdue payment{overduePaymentCount !== 1 ? "s" : ""}
-                </span>
-              )}
-              <span>Click the bell icon to view and manage reminders</span>
+              </div>
             </div>
           </div>
+          <button
+            onClick={() => {
+              setShowBanner(false);
+              setDismissed(true);
+            }}
+            className="p-1 rounded hover:bg-red-200 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 transition-colors flex-shrink-0 mt-0.5"
+            title="Dismiss banner for this session"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <button
-          onClick={() => {
-            setShowBanner(false);
-            setDismissed(true);
-          }}
-          className="p-1 rounded hover:bg-red-200 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 transition-colors flex-shrink-0"
-          title="Dismiss banner for this session"
-        >
-          <X className="w-5 h-5" />
-        </button>
       </div>
     </div>
   );

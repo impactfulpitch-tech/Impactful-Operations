@@ -1,15 +1,29 @@
 import { useState } from "react";
-import { BarChart3, RefreshCw, DollarSign, ShoppingCart, Users, TrendingUp, Download } from "lucide-react";
+import { BarChart3, RefreshCw, DollarSign, ShoppingCart, Users, TrendingUp, Download, FileText, Search, Filter } from "lucide-react";
 import { useAutoRefreshAnalytics } from "@/hooks/useAutoRefreshAnalytics";
 import { exportFullReportToExcel, exportTasksRealDataToExcel, exportTeamRealDataToExcel } from "@/lib/exportWithRealData";
+import { reportSheets, ReportRecord } from "@/data/reportsData";
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from "recharts";
 
+function getStatusColor(status: string): string {
+  if (!status) return "bg-gray-100 text-gray-800";
+  const s = status.toLowerCase();
+  if (s.includes("completed") || s.includes("approved")) return "bg-green-200 text-green-900 font-semibold";
+  if (s.includes("archived")) return "bg-gray-200 text-gray-900 font-semibold";
+  if (s.includes("in progress") || s.includes("in review")) return "bg-blue-200 text-blue-900 font-semibold";
+  if (s.includes("active")) return "bg-emerald-200 text-emerald-900 font-semibold";
+  return "bg-gray-200 text-gray-800";
+}
+
 export default function Reports() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [activeReportSheet, setActiveReportSheet] = useState("monthly");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchReport, setSearchReport] = useState("");
+  const [filterReportCat, setFilterReportCat] = useState("all");
 
   // Auto-refresh all analytics data every second
   const { tasks, teamMembers, projects } = useAutoRefreshAnalytics();
@@ -57,10 +71,22 @@ export default function Reports() {
   };
 
   const tabs = [
-    { id: "overview", label: "Overview", icon: "📊" },
+    { id: "overview", label: "Analytics Dashboard", icon: "📊" },
     { id: "projects", label: "Projects", icon: "📁" },
     { id: "tasks", label: "Task Analytics", icon: "✓" },
+    { id: "reports", label: "HR Reports", icon: "📋" },
   ];
+
+  // Get current report sheet
+  const currentReportSheet = reportSheets.find((s) => s.id === activeReportSheet);
+  const reportRecords = currentReportSheet?.records || [];
+
+  // Filter report data
+  const filteredReports = reportRecords.filter((r) => {
+    if (filterReportCat !== "all" && r.category !== filterReportCat) return false;
+    if (searchReport && !r.name.toLowerCase().includes(searchReport.toLowerCase())) return false;
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
@@ -385,6 +411,116 @@ export default function Reports() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* HR REPORTS TAB */}
+        {activeTab === "reports" && (
+          <div className="space-y-6">
+            {/* Report Data Display */}
+            {currentReportSheet && (
+              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    {currentReportSheet.name} - Report Data
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                    {currentReportSheet.description} ({filteredReports.length} records)
+                  </p>
+
+                  {/* Search and Filter */}
+                  <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search records..."
+                        value={searchReport}
+                        onChange={(e) => setSearchReport(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Filter className="w-4 h-4 text-slate-500" />
+                      <select
+                        value={filterReportCat}
+                        onChange={(e) => setFilterReportCat(e.target.value)}
+                        className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+                      >
+                        <option value="all">All Categories</option>
+                        <option value="report">Reports</option>
+                        <option value="department">Departments</option>
+                        <option value="performance">Performance</option>
+                        <option value="archived">Archived</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Report Table */}
+                {filteredReports.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-700">
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">Name</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">Department</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">Date</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">Status</th>
+                          {filteredReports[0]?.amount !== undefined && (
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">Amount</th>
+                          )}
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">Remarks</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredReports.map((record: ReportRecord, idx) => (
+                          <tr key={idx} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                            <td className="px-4 py-3">
+                              <span className="font-medium text-slate-900 dark:text-white">{record.name}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-sm text-slate-600 dark:text-slate-400">{record.department}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-sm text-slate-600 dark:text-slate-400">{record.date}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusColor(record.status)}`}>
+                                {record.status}
+                              </span>
+                            </td>
+                            {record.amount !== undefined && (
+                              <td className="px-4 py-3">
+                                <span className="font-semibold text-slate-900 dark:text-white">
+                                  {typeof record.amount === 'number' && record.amount > 100 
+                                    ? `₹${record.amount.toLocaleString('en-IN')}` 
+                                    : record.amount}
+                                </span>
+                              </td>
+                            )}
+                            <td className="px-4 py-3">
+                              <span className="text-sm text-slate-600 dark:text-slate-400">{record.remarks || '-'}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-sm text-slate-600 dark:text-slate-400">{record.action || '-'}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                      <p className="text-slate-600 dark:text-slate-400">No records found</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

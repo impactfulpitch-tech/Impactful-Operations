@@ -135,7 +135,8 @@ export default function Team() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-5 max-w-7xl mx-auto">
+    <div className="w-full min-h-screen bg-white dark:bg-slate-900 overflow-x-hidden">
+      <div className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto space-y-5">
       <PageHeader 
         title="Team" 
         subtitle={`Workload overview · ${filtered.length} members`} 
@@ -270,8 +271,8 @@ export default function Team() {
             {
               name: "department",
               label: "Department",
-              type: "select",
-              options: departments.map((d) => ({ value: d, label: d })),
+              type: "text",
+              placeholder: "e.g., Design, Content, Finance, IB",
               required: true,
             },
           ]}
@@ -291,8 +292,8 @@ export default function Team() {
               {
                 name: "department",
                 label: "Department",
-                type: "select",
-                options: departments.map((d) => ({ value: d, label: d })),
+                type: "text",
+                placeholder: "e.g., Design, Content, Finance, IB",
                 required: true,
               },
             ]}
@@ -325,6 +326,7 @@ export default function Team() {
           </div>
         </div>
       </Modal>
+      </div>
     </div>
   );
 }

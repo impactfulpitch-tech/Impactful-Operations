@@ -12,6 +12,7 @@ import { PrismaClient } from '@prisma/client';
 // import activityLogRoutes from './routes/activityLog';
 // import authRoutes from './routes/auth';
 // import projectLinksRoutes from './routes/projectLinks';
+import reportsRoutes from './routes/reports';
 
 // Load environment variables
 dotenv.config();
@@ -114,6 +115,7 @@ app.get('/', (req: Request, res: Response) => {
 // app.use('/api/invoices', invoiceRoutes);
 // app.use('/api/clients', clientSheetRoutes);
 // app.use('/api/activity', activityLogRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {

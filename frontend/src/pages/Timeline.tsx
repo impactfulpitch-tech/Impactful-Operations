@@ -138,16 +138,16 @@ export default function Timeline() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 overflow-x-hidden">
       {/* Header */}
-      <div className="px-6 lg:px-8 py-6 border-b border-slate-200 dark:border-slate-700">
+      <div className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-400 dark:to-blue-500 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-400 dark:to-blue-500 bg-clip-text text-transparent">
                 Project Timeline
               </h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-1">Track all tasks across your projects</p>
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">Track all tasks across your projects</p>
             </div>
             {isAdmin && (
               <button
